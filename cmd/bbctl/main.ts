@@ -1,33 +1,31 @@
-package main
+// package main
 
-import (
-	"context"
-	"fmt"
-	"os"
-	"path"
-	"time"
+import './context';
+import './fmt';
+import './os';
+import './path';
+import './time';
 
-	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
-	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/id"
+import './github.com/fatih/color';
+import './github.com/urfave/cli/v2';
+import './maunium.net/go/mautrix';
+import './maunium.net/go/mautrix/id';
 
-	"github.com/beeper/bridge-manager/api/hungryapi"
-	"github.com/beeper/bridge-manager/log"
-)
+import './github.com/beeper/bridge-manager/api/hungryapi';
+import './github.com/beeper/bridge-manager/log';
 
-type UserError struct {
-	Message string
+export class UserError {
+	Message: string;
 }
 
-func (ue UserError) Error() string {
+func (ue UserError) Error = () string {
 	return ue.Message
 }
 
 var (
-	Tag       string
-	Commit    string
-	BuildTime string
+	Tag: string;
+	Commit: string;
+	BuildTime: string;
 
 	ParsedBuildTime time.Time
 
@@ -36,7 +34,7 @@ var (
 
 const BuildTimeFormat = "Jan _2 2006, 15:04:05 MST"
 
-func init() {
+export const init = () {
 	var err error
 	ParsedBuildTime, err = time.Parse(time.RFC3339, BuildTime)
 	if BuildTime != "" && err != nil {
@@ -58,27 +56,27 @@ func init() {
 	mautrix.DefaultUserAgent = fmt.Sprintf("bbctl/%s %s", Version, mautrix.DefaultUserAgent)
 }
 
-func getDefaultConfigPath() string {
-	baseConfigDir, err := os.UserConfigDir()
+export const getDefaultConfigPath = () string {
+	baseConfigDir, err = os.UserConfigDir()
 	if err != nil {
 		panic(err)
 	}
 	return path.Join(baseConfigDir, "bbctl", "config.json")
 }
 
-func prepareApp(ctx *cli.Context) error {
-	cfg, err := loadConfig(ctx.String("config"))
+export const prepareApp = (ctx: cli.Context) error {
+	cfg, err = loadConfig(ctx.String("config"))
 	if err != nil {
 		return err
 	}
-	env := ctx.String("env")
-	homeserver, ok := envs[env]
+	env = ctx.String("env")
+	homeserver, ok = envs[env]
 	if !ok {
 		return fmt.Errorf("invalid environment %q", env)
 	} else if err = ctx.Set("homeserver", homeserver); err != nil {
 		return err
 	}
-	envConfig := cfg.Environments.Get(env)
+	envConfig = cfg.Environments.Get(env)
 	ctx.Context = context.WithValue(ctx.Context, contextKeyConfig, cfg)
 	ctx.Context = context.WithValue(ctx.Context, contextKeyEnvConfig, envConfig)
 	if envConfig.HasCredentials() {
@@ -122,7 +120,7 @@ var app = &cli.App{
 			EnvVars: []string{"BBCTL_COLOR"},
 			Usage:   "Enable or disable all colors and hyperlinks in output (valid values: always/never/auto)",
 			Value:   "auto",
-			Action: func(ctx *cli.Context, val string) error {
+			Action: func(ctx: cli.Context, val: string) error {
 				switch val {
 				case "never":
 					color.NoColor = true
@@ -151,28 +149,28 @@ var app = &cli.App{
 	},
 }
 
-func main() {
-	if err := app.Run(os.Args); err != nil {
+export const main = () {
+	if err = app.Run(os.Args); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err.Error())
 	}
 }
 
 const MatrixURLTemplate = "https://matrix.%s"
 
-func NewMatrixAPI(baseDomain string, username, accessToken string) *mautrix.Client {
-	homeserverURL := fmt.Sprintf(MatrixURLTemplate, baseDomain)
+export const NewMatrixAPI = (baseDomain: string, username, accessToken: string) *mautrix.Client {
+	homeserverURL = fmt.Sprintf(MatrixURLTemplate, baseDomain)
 	var userID id.UserID
 	if username != "" {
 		userID = id.NewUserID(username, baseDomain)
 	}
-	client, err := mautrix.NewClient(homeserverURL, userID, accessToken)
+	client, err = mautrix.NewClient(homeserverURL, userID, accessToken)
 	if err != nil {
 		panic(err)
 	}
 	return client
 }
 
-func RequiresAuth(ctx *cli.Context) error {
+export const RequiresAuth = (ctx: cli.Context) error {
 	if !GetEnvConfig(ctx).HasCredentials() {
 		return UserError{"You're not logged in"}
 	}

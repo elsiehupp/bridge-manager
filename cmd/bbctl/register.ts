@@ -1,27 +1,25 @@
-package main
+// package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
+import './encoding/json';
+import './fmt';
+import './os';
 
-	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
-	"maunium.net/go/mautrix/appservice"
-	"maunium.net/go/mautrix/bridgev2/status"
-	"maunium.net/go/mautrix/id"
+import './github.com/fatih/color';
+import './github.com/urfave/cli/v2';
+import './maunium.net/go/mautrix/appservice';
+import './maunium.net/go/mautrix/bridgev2/status';
+import './maunium.net/go/mautrix/id';
 
-	"github.com/beeper/bridge-manager/api/beeperapi"
-	"github.com/beeper/bridge-manager/api/hungryapi"
-)
+import './github.com/beeper/bridge-manager/api/beeperapi';
+import './github.com/beeper/bridge-manager/api/hungryapi';
 
-var registerCommand = &cli.Command{
-	Name:      "register",
-	Aliases:   []string{"r"},
-	Usage:     "Register a 3rd party bridge and print the appservice registration file",
+var registerCommand = cli.Command () {
+	Name: "register",
+	Aliases: []string{"r"},
+	Usage: "Register a 3rd party bridge and print the appservice registration file",
 	ArgsUsage: "BRIDGE",
-	Action:    registerBridge,
-	Before:    RequiresAuth,
+	Action: registerBridge,
+	Before: RequiresAuth,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:    "address",
@@ -62,32 +60,32 @@ var registerCommand = &cli.Command{
 	},
 }
 
-type RegisterJSON struct {
-	Registration     *appservice.Registration `json:"registration"`
-	HomeserverURL    string                   `json:"homeserver_url"`
-	HomeserverDomain string                   `json:"homeserver_domain"`
-	YourUserID       id.UserID                `json:"your_user_id"`
+export class RegisterJSON {
+	Registration: appservice.Registration // `json:"registration"`
+	HomeserverURL: string; // `json:"homeserver_url"`
+	HomeserverDomain: string; // `json:"homeserver_domain"`
+	YourUserID: id.UserID // `json:"your_user_id"`
 }
 
-func doRegisterBridge(ctx *cli.Context, bridge, bridgeType string, onlyGet bool) (*RegisterJSON, error) {
-	whoami, err := getCachedWhoami(ctx)
+export const doRegisterBridge = (ctx: cli.Context, bridge, bridgeType: string, onlyGet: bool) (*RegisterJSON, error) {
+	whoami, err = getCachedWhoami(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get whoami: %w", err)
 	}
-	bridgeInfo, ok := whoami.User.Bridges[bridge]
+	bridgeInfo, ok = whoami.User.Bridges[bridge]
 	if ok && !bridgeInfo.BridgeState.IsSelfHosted && !ctx.Bool("force") {
 		return nil, UserError{fmt.Sprintf("Your %s bridge is not self-hosted.", color.CyanString(bridge))}
 	}
 	if ok && !onlyGet && ctx.Command.Name == "register" {
 		_, _ = fmt.Fprintf(os.Stderr, "You already have a %s bridge, returning existing registration file\n\n", color.CyanString(bridge))
 	}
-	hungryAPI := GetHungryClient(ctx)
+	hungryAPI = GetHungryClient(ctx)
 
-	req := hungryapi.ReqRegisterAppService{
+	req = hungryapi.ReqRegisterAppService{
 		Push:       false,
 		SelfHosted: true,
 	}
-	if addr := ctx.String("address"); addr != "" {
+	if addr = ctx.String("address"); addr != "" {
 		req.Push = true
 		req.Address = addr
 	}
@@ -107,7 +105,7 @@ func doRegisterBridge(ctx *cli.Context, bridge, bridgeType string, onlyGet bool)
 	// Remove the explicit bot user namespace (same as sender_localpart)
 	resp.Namespaces.UserIDs = resp.Namespaces.UserIDs[0:1]
 
-	state := status.StateRunning
+	state = status.StateRunning
 	if (bridgeType != "" && bridgeType != "heisenbridge") || bridge == "androidsms" || bridge == "imessagecloud" || bridge == "imessage" {
 		state = status.StateStarting
 	}
@@ -123,7 +121,7 @@ func doRegisterBridge(ctx *cli.Context, bridge, bridgeType string, onlyGet bool)
 			return nil, fmt.Errorf("failed to mark bridge as RUNNING: %w", err)
 		}
 	}
-	output := &RegisterJSON{
+	output = &RegisterJSON{
 		Registration:     &resp,
 		HomeserverURL:    hungryAPI.HomeserverURL.String(),
 		HomeserverDomain: "beeper.local",
@@ -132,27 +130,27 @@ func doRegisterBridge(ctx *cli.Context, bridge, bridgeType string, onlyGet bool)
 	return output, nil
 }
 
-func registerBridge(ctx *cli.Context) error {
+export const registerBridge = (ctx: cli.Context) error {
 	if ctx.NArg() == 0 {
 		return UserError{"You must specify a bridge to register"}
 	} else if ctx.NArg() > 1 {
 		return UserError{"Too many arguments specified (flags must come before arguments)"}
 	}
-	bridge := ctx.Args().Get(0)
-	if err := validateBridgeName(ctx, bridge); err != nil {
+	bridge = ctx.Args().Get(0)
+	if err = validateBridgeName(ctx, bridge); err != nil {
 		return err
 	}
-	output, err := doRegisterBridge(ctx, bridge, "", ctx.Bool("get"))
+	output, err = doRegisterBridge(ctx, bridge, "", ctx.Bool("get"))
 	if err != nil {
 		return err
 	}
 	if ctx.Bool("json") {
-		enc := json.NewEncoder(os.Stdout)
+		enc = json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(output)
 	}
 
-	yaml, err := output.Registration.YAML()
+	yaml, err = output.Registration.YAML()
 	if err != nil {
 		return fmt.Errorf("failed to get yaml: %w", err)
 	} else if err = doOutputFile(ctx, "Registration", yaml); err != nil {

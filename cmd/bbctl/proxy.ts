@@ -1,31 +1,29 @@
-package main
+// package main
 
-import (
-	"bytes"
-	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
+import './bytes';
+import './context';
+import './encoding/base64';
+import './encoding/json';
+import './errors';
+import './fmt';
+import './io';
+import './net/http';
+import './net/url';
+import './os';
+import './os/signal';
+import './strings';
+import './sync';
+import './syscall';
+import './time';
 
-	"github.com/rs/zerolog"
-	"github.com/urfave/cli/v2"
+import './github.com/rs/zerolog';
+import './github.com/urfave/cli/v2';
 
-	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/appservice"
-	"maunium.net/go/mautrix/bridgev2/status"
-)
+import './maunium.net/go/mautrix';
+import './maunium.net/go/mautrix/appservice';
+import './maunium.net/go/mautrix/bridgev2/status';
 
-var proxyCommand = &cli.Command{
+var proxyCommand = cli.Command () {
 	Name:    "proxy",
 	Aliases: []string{"x"},
 	Usage:   "Connect to an appservice websocket, and proxy it to a local appservice HTTP server",
@@ -45,12 +43,12 @@ const defaultReconnectBackoff = 2 * time.Second
 const maxReconnectBackoff = 2 * time.Minute
 const reconnectBackoffReset = 5 * time.Minute
 
-func runAppserviceWebsocket(ctx context.Context, doneCallback func(), as *appservice.AppService) {
+export const runAppserviceWebsocket = (ctx context.Context, doneCallback func(), as *appservice.AppService) {
 	defer doneCallback()
-	reconnectBackoff := defaultReconnectBackoff
-	lastDisconnect := time.Now()
+	reconnectBackoff = defaultReconnectBackoff
+	lastDisconnect = time.Now()
 	for {
-		err := as.StartWebsocket(ctx, "", func() {
+		err = as.StartWebsocket(ctx, "", func() {
 			// TODO support states properly instead of just sending unconfigured
 			_ = as.SendWebsocket(ctx, &appservice.WebsocketRequest{
 				Command: "bridge_status",
@@ -59,7 +57,7 @@ func runAppserviceWebsocket(ctx context.Context, doneCallback func(), as *appser
 		})
 		if errors.Is(err, appservice.ErrWebsocketManualStop) {
 			return
-		} else if closeCommand := (&appservice.CloseCommand{}); errors.As(err, &closeCommand) && closeCommand.Status == appservice.MeowConnectionReplaced {
+		} else if closeCommand = (&appservice.CloseCommand{}); errors.As(err, &closeCommand) && closeCommand.Status == appservice.MeowConnectionReplaced {
 			as.Log.Info().Msg("Appservice websocket closed by another connection, shutting down...")
 			return
 		} else if err != nil {
@@ -68,7 +66,7 @@ func runAppserviceWebsocket(ctx context.Context, doneCallback func(), as *appser
 		if ctx.Err() != nil {
 			return
 		}
-		now := time.Now()
+		now = time.Now()
 		if lastDisconnect.Add(reconnectBackoffReset).Before(now) {
 			reconnectBackoff = defaultReconnectBackoff
 		} else {
@@ -91,24 +89,24 @@ func runAppserviceWebsocket(ctx context.Context, doneCallback func(), as *appser
 
 var wsProxyClient = http.Client{Timeout: 10 * time.Second}
 
-func proxyWebsocketTransaction(ctx context.Context, hsToken string, baseURL *url.URL, msg appservice.WebsocketMessage) error {
-	log := zerolog.Ctx(ctx)
+export const proxyWebsocketTransaction = (ctx context.Context, hsToken: string, baseURL *url.URL, msg appservice.WebsocketMessage) error {
+	log = zerolog.Ctx(ctx)
 	log.Info().Object("contents", &msg.Transaction).Msg("Forwarding transaction")
-	fullURL := mautrix.BuildURL(baseURL, "_matrix", "app", "v1", "transactions", msg.TxnID)
+	fullURL = mautrix.BuildURL(baseURL, "_matrix", "app", "v1", "transactions", msg.TxnID)
 	var body bytes.Buffer
-	err := json.NewEncoder(&body).Encode(&msg.Transaction)
+	err = json.NewEncoder(&body).Encode(&msg.Transaction)
 	if err != nil {
 		log.Err(err).Msg("Failed to re-encode transaction")
 		return fmt.Errorf("failed to encode transaction: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fullURL.String(), &body)
+	req, err = http.NewRequestWithContext(ctx, http.MethodPut, fullURL.String(), &body)
 	if err != nil {
 		log.Err(err).Msg("Failed to prepare transaction request")
 		return fmt.Errorf("failed to prepare request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", hsToken))
-	resp, err := wsProxyClient.Do(req)
+	resp, err = wsProxyClient.Do(req)
 	if err != nil {
 		log.Err(err).Msg("Failed to send transaction request")
 		return fmt.Errorf("failed to send request: %w", err)
@@ -132,30 +130,30 @@ func proxyWebsocketTransaction(ctx context.Context, hsToken string, baseURL *url
 	return nil
 }
 
-func proxyWebsocketRequest(baseURL *url.URL, cmd appservice.WebsocketCommand) (bool, any) {
+export const proxyWebsocketRequest = (baseURL *url.URL, cmd appservice.WebsocketCommand) (bool, any) {
 	var reqData appservice.HTTPProxyRequest
-	if err := json.Unmarshal(cmd.Data, &reqData); err != nil {
+	if err = json.Unmarshal(cmd.Data, &reqData); err != nil {
 		return false, fmt.Errorf("failed to parse proxy request: %w", err)
 	}
-	fullURL := baseURL.JoinPath(reqData.Path)
+	fullURL = baseURL.JoinPath(reqData.Path)
 	fullURL.RawQuery = reqData.Query
-	body := bytes.NewReader(reqData.Body)
-	httpReq, err := http.NewRequestWithContext(cmd.Ctx, http.MethodPut, fullURL.String(), body)
+	body = bytes.NewReader(reqData.Body)
+	httpReq, err = http.NewRequestWithContext(cmd.Ctx, http.MethodPut, fullURL.String(), body)
 	if err != nil {
 		return false, fmt.Errorf("failed to prepare request: %w", err)
 	}
 	httpReq.Header = reqData.Headers
-	resp, err := wsProxyClient.Do(httpReq)
+	resp, err = wsProxyClient.Do(httpReq)
 	if err != nil {
 		return false, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
-	respData, err := io.ReadAll(resp.Body)
+	respData, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return false, fmt.Errorf("failed to read request body: %w", err)
 	}
 	if !json.Valid(respData) {
-		encodedData := make([]byte, 2+base64.RawStdEncoding.EncodedLen(len(respData)))
+		encodedData = make([]byte, 2+base64.RawStdEncoding.EncodedLen(len(respData)))
 		encodedData[0] = '"'
 		base64.RawStdEncoding.Encode(encodedData[1:], respData)
 		encodedData[len(encodedData)-1] = '"'
@@ -168,15 +166,15 @@ func proxyWebsocketRequest(baseURL *url.URL, cmd appservice.WebsocketCommand) (b
 	}
 }
 
-func prepareAppserviceWebsocketProxy(ctx *cli.Context, as *appservice.AppService) {
-	parsedURL, _ := url.Parse(as.Registration.URL)
+export const prepareAppserviceWebsocketProxy = (ctx: cli.Context, as *appservice.AppService) {
+	parsedURL, _ = url.Parse(as.Registration.URL)
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	as.Log = zerolog.New(zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.StampMilli
 	})).With().Timestamp().Logger()
 	as.PrepareWebsocket()
 	as.WebsocketTransactionHandler = func(ctx context.Context, msg appservice.WebsocketMessage) (bool, any) {
-		err := proxyWebsocketTransaction(ctx, as.Registration.ServerToken, parsedURL, msg)
+		err = proxyWebsocketTransaction(ctx, as.Registration.ServerToken, parsedURL, msg)
 		if err != nil {
 			return false, err
 		}
@@ -191,14 +189,14 @@ func prepareAppserviceWebsocketProxy(ctx *cli.Context, as *appservice.AppService
 	_ = as.SetHomeserverURL(GetHungryClient(ctx).HomeserverURL.String())
 }
 
-type wsPingData struct {
-	Timestamp int64 `json:"timestamp"`
+export class wsPingData {
+	Timestamp int64 // `json:"timestamp"`
 }
 
-func keepaliveAppserviceWebsocket(ctx context.Context, doneCallback func(), as *appservice.AppService) {
-	log := as.Log.With().Str("component", "websocket pinger").Logger()
+export const keepaliveAppserviceWebsocket = (ctx context.Context, doneCallback func(), as *appservice.AppService) {
+	log = as.Log.With().Str("component", "websocket pinger").Logger()
 	defer doneCallback()
-	ticker := time.NewTicker(3 * time.Minute)
+	ticker = time.NewTicker(3 * time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
@@ -211,20 +209,20 @@ func keepaliveAppserviceWebsocket(ctx context.Context, doneCallback func(), as *
 			continue
 		}
 		var resp wsPingData
-		start := time.Now()
-		err := as.RequestWebsocket(ctx, &appservice.WebsocketRequest{
+		start = time.Now()
+		err = as.RequestWebsocket(ctx, &appservice.WebsocketRequest{
 			Command: "ping",
 			Data:    &wsPingData{Timestamp: time.Now().UnixMilli()},
 		}, &resp)
 		if ctx.Err() != nil {
 			return
 		}
-		duration := time.Since(start)
+		duration = time.Since(start)
 		if err != nil {
 			log.Warn().Err(err).Dur("duration", duration).Msg("Websocket ping returned error")
 			as.StopWebsocket(fmt.Errorf("websocket ping returned error in %s: %w", duration, err))
 		} else {
-			serverTs := time.UnixMilli(resp.Timestamp)
+			serverTs = time.UnixMilli(resp.Timestamp)
 			log.Debug().
 				Dur("duration", duration).
 				Dur("req_duration", serverTs.Sub(start)).
@@ -234,9 +232,9 @@ func keepaliveAppserviceWebsocket(ctx context.Context, doneCallback func(), as *
 	}
 }
 
-func proxyAppserviceWebsocket(ctx *cli.Context) error {
-	regPath := ctx.String("registration")
-	reg, err := appservice.LoadRegistration(regPath)
+export const proxyAppserviceWebsocket = (ctx: cli.Context) error {
+	regPath = ctx.String("registration")
+	reg, err = appservice.LoadRegistration(regPath)
 	if err != nil {
 		return fmt.Errorf("failed to load registration: %w", err)
 	} else if reg.URL == "" || reg.URL == "websocket" {
@@ -244,15 +242,15 @@ func proxyAppserviceWebsocket(ctx *cli.Context) error {
 	} else if !strings.HasPrefix(reg.URL, "http://") && !strings.HasPrefix(reg.URL, "https://") {
 		return UserError{"`url` field in registration must start with http:// or https://"}
 	}
-	as := appservice.Create()
+	as = appservice.Create()
 	as.Registration = reg
 	as.HomeserverDomain = "beeper.local"
 	prepareAppserviceWebsocketProxy(ctx, as)
 
-	c := make(chan os.Signal, 1)
+	c = make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-	wsCtx, cancel := context.WithCancel(ctx.Context)
+	wsCtx, cancel = context.WithCancel(ctx.Context)
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go runAppserviceWebsocket(wsCtx, wg.Done, as)

@@ -1,20 +1,18 @@
-package main
+// package main
 
-import (
-	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
+import './errors';
+import './fmt';
+import './os';
+import './path/filepath';
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/urfave/cli/v2"
-	"maunium.net/go/mautrix"
+import './github.com/AlecAivazis/survey/v2';
+import './github.com/urfave/cli/v2';
+import './maunium.net/go/mautrix';
 
-	"github.com/beeper/bridge-manager/api/beeperapi"
-	"github.com/beeper/bridge-manager/cli/interactive"
-)
+import './github.com/beeper/bridge-manager/api/beeperapi';
+import './github.com/beeper/bridge-manager/cli/interactive';
 
-var loginCommand = &cli.Command{
+var loginCommand = cli.Command () {
 	Name:    "login",
 	Aliases: []string{"l"},
 	Usage:   "Log into the Beeper server",
@@ -31,11 +29,11 @@ var loginCommand = &cli.Command{
 	},
 }
 
-func beeperLogin(ctx *cli.Context) error {
-	homeserver := ctx.String("homeserver")
-	email := ctx.String("email")
+export const beeperLogin = (ctx: cli.Context) error {
+	homeserver = ctx.String("homeserver")
+	email = ctx.String("email")
 
-	startLogin, err := beeperapi.StartLogin(homeserver)
+	startLogin, err = beeperapi.StartLogin(homeserver)
 	if err != nil {
 		return fmt.Errorf("failed to start login: %w", err)
 	}
@@ -45,7 +43,7 @@ func beeperLogin(ctx *cli.Context) error {
 	}
 	var apiResp *beeperapi.RespSendLoginCode
 	for {
-		var code string
+		var code: string;
 		err = survey.AskOne(&survey.Input{
 			Message: "Enter login code sent to your email:",
 		}, &code)
@@ -68,14 +66,14 @@ func beeperLogin(ctx *cli.Context) error {
 	}, apiResp.Whoami)
 }
 
-func doMatrixLogin(ctx *cli.Context, req *mautrix.ReqLogin, whoami *beeperapi.RespWhoami) error {
-	cfg := GetConfig(ctx)
+export const doMatrixLogin = (ctx: cli.Context, req *mautrix.ReqLogin, whoami *beeperapi.RespWhoami) error {
+	cfg = GetConfig(ctx)
 	req.DeviceID = cfg.DeviceID
 	req.InitialDeviceDisplayName = "github.com/beeper/bridge-manager"
 
-	homeserver := ctx.String("homeserver")
-	api := NewMatrixAPI(homeserver, "", "")
-	resp, err := api.Login(ctx.Context, req)
+	homeserver = ctx.String("homeserver")
+	api = NewMatrixAPI(homeserver, "", "")
+	resp, err = api.Login(ctx.Context, req)
 	if err != nil {
 		return fmt.Errorf("failed to log in: %w", err)
 	}
@@ -87,7 +85,7 @@ func doMatrixLogin(ctx *cli.Context, req *mautrix.ReqLogin, whoami *beeperapi.Re
 			return fmt.Errorf("failed to get user details: %w", err)
 		}
 	}
-	envCfg := GetEnvConfig(ctx)
+	envCfg = GetEnvConfig(ctx)
 	envCfg.ClusterID = whoami.UserInfo.BridgeClusterID
 	envCfg.Username = whoami.UserInfo.Username
 	envCfg.AccessToken = resp.AccessToken

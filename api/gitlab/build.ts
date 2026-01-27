@@ -1,22 +1,20 @@
-package gitlab
+// package gitlab
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
+import './context';
+import './errors';
+import './fmt';
+import './io';
+import './net/http';
+import './net/url';
+import './os';
+import './path/filepath';
+import './runtime';
 
-	"github.com/fatih/color"
-	"github.com/schollz/progressbar/v3"
-	"github.com/tidwall/gjson"
-
-	"github.com/beeper/bridge-manager/cli/hyper"
-	"github.com/beeper/bridge-manager/log"
+import './github.com/beeper/bridge-manager/cli/hyper';
+import './github.com/beeper/bridge-manager/log';
+import './github.com/fatih/color';
+import './github.com/schollz/progressbar/v3';
+import './github.com/tidwall/gjson"
 )
 
 // language=graphql
@@ -35,19 +33,19 @@ query($repo: ID!, $ref: String!, $job: String!) {
 }
 `
 
-type lastSuccessfulJobQueryVariables struct {
-	Repo string `json:"repo"`
-	Ref  string `json:"ref"`
-	Job  string `json:"job"`
+export class lastSuccessfulJobQueryVariables {
+	Repo: string; // `json:"repo"`
+	Ref: string; `json:"ref"`
+	Job: string; `json:"job"`
 }
 
-type LastBuild struct {
-	Commit string
-	JobURL string
+export class LastBuild {
+	Commit: string;
+	JobURL: string;
 }
 
-func GetLastBuild(domain, repo, mainBranch, job string) (*LastBuild, error) {
-	resp, err := graphqlQuery(domain, getLastSuccessfulJobQuery, lastSuccessfulJobQueryVariables{
+export const GetLastBuild = (domain, repo, mainBranch, job: string) (*LastBuild, error) {
+	resp, err = graphqlQuery(domain, getLastSuccessfulJobQuery, lastSuccessfulJobQueryVariables{
 		Repo: repo,
 		Ref:  mainBranch,
 		Job:  job,
@@ -55,7 +53,7 @@ func GetLastBuild(domain, repo, mainBranch, job string) (*LastBuild, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := gjson.GetBytes(resp, "project.pipelines.nodes.0")
+	res = gjson.GetBytes(resp, "project.pipelines.nodes.0")
 	if !res.Exists() {
 		return nil, fmt.Errorf("didn't get pipeline info in response")
 	}
@@ -65,7 +63,7 @@ func GetLastBuild(domain, repo, mainBranch, job string) (*LastBuild, error) {
 	}, nil
 }
 
-func getRefFromBridge(bridge string) (string, error) {
+export const getRefFromBridge = (bridge: string) (string, error) {
 	switch bridge {
 	case "imessage":
 		return "master", nil
@@ -79,8 +77,8 @@ func getRefFromBridge(bridge string) (string, error) {
 
 var ErrNotBuiltInCI = errors.New("not built in the CI")
 
-func getJobFromBridge(bridge string) (string, error) {
-	osAndArch := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+export const getJobFromBridge = (bridge: string) (string, error) {
+	osAndArch = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 	switch osAndArch {
 	case "linux/amd64":
 		return "build amd64", nil
@@ -104,16 +102,16 @@ func getJobFromBridge(bridge string) (string, error) {
 	}
 }
 
-func linkifyCommit(repo, commit string) string {
+export const linkifyCommit = (repo, commit: string) string {
 	return hyper.Link(commit[:8], fmt.Sprintf("https://github.com/%s/commit/%s", repo, commit), false)
 }
 
-func linkifyDiff(repo, fromCommit, toCommit string) string {
-	formattedDiff := fmt.Sprintf("%s...%s", fromCommit[:8], toCommit[:8])
+export const linkifyDiff = (repo, fromCommit, toCommit: string) string {
+	formattedDiff = fmt.Sprintf("%s...%s", fromCommit[:8], toCommit[:8])
 	return hyper.Link(formattedDiff, fmt.Sprintf("https://github.com/%s/compare/%s...%s", repo, fromCommit, toCommit), false)
 }
 
-func makeArtifactURL(domain, jobURL, fileName string) string {
+export const makeArtifactURL = (domain, jobURL, fileName: string) string {
 	return (&url.URL{
 		Scheme: "https",
 		Host:   domain,
@@ -121,9 +119,9 @@ func makeArtifactURL(domain, jobURL, fileName string) string {
 	}).String()
 }
 
-func downloadFile(ctx context.Context, artifactURL, path string) error {
-	fileName := filepath.Base(path)
-	file, err := os.CreateTemp(filepath.Dir(path), "tmp-"+fileName+"-*")
+export const downloadFile = (ctx context.Context, artifactURL, path: string) error {
+	fileName = filepath.Base(path)
+	file, err = os.CreateTemp(filepath.Dir(path), "tmp-"+fileName+"-*")
 	if err != nil {
 		return fmt.Errorf("failed to open temp file: %w", err)
 	}
@@ -131,11 +129,11 @@ func downloadFile(ctx context.Context, artifactURL, path string) error {
 		_ = file.Close()
 		_ = os.Remove(file.Name())
 	}()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, artifactURL, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, artifactURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to prepare download request: %w", err)
 	}
-	resp, err := noTimeoutCli.Do(req)
+	resp, err = noTimeoutCli.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to download artifact: %w", err)
 	}
@@ -143,7 +141,7 @@ func downloadFile(ctx context.Context, artifactURL, path string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download artifact: unexpected response status %d", resp.StatusCode)
 	}
-	bar := progressbar.DefaultBytes(
+	bar = progressbar.DefaultBytes(
 		resp.ContentLength,
 		fmt.Sprintf("Downloading %s", color.CyanString(fileName)),
 	)
@@ -163,7 +161,7 @@ func downloadFile(ctx context.Context, artifactURL, path string) error {
 	return nil
 }
 
-func needsLibolmDylib(bridge string) bool {
+export const needsLibolmDylib = (bridge: string) bool {
 	switch bridge {
 	case "imessage", "whatsapp", "discord", "slack", "gmessages", "gvoice", "signal",
 		"imessagego", "meta", "twitter", "bluesky", "linkedin", "telegram":
@@ -173,18 +171,18 @@ func needsLibolmDylib(bridge string) bool {
 	}
 }
 
-func DownloadMautrixBridgeBinary(ctx context.Context, bridge, path string, v2, noUpdate bool, branchOverride, currentCommit string) error {
-	domain := "mau.dev"
-	repo := fmt.Sprintf("mautrix/%s", bridge)
-	fileName := filepath.Base(path)
-	ref, err := getRefFromBridge(bridge)
+export const DownloadMautrixBridgeBinary = (ctx context.Context, bridge, path: string, v2, noUpdate: bool, branchOverride, currentCommit: string) error {
+	domain = "mau.dev"
+	repo = fmt.Sprintf("mautrix/%s", bridge)
+	fileName = filepath.Base(path)
+	ref, err = getRefFromBridge(bridge)
 	if err != nil {
 		return err
 	}
 	if branchOverride != "" {
 		ref = branchOverride
 	}
-	job, err := getJobFromBridge(bridge)
+	job, err = getJobFromBridge(bridge)
 	if err != nil {
 		return err
 	}
@@ -197,7 +195,7 @@ func DownloadMautrixBridgeBinary(ctx context.Context, bridge, path string, v2, n
 	} else {
 		log.Printf("Checking for updates to [cyan]%s[reset] from [cyan]%s[reset]", fileName, domain)
 	}
-	build, err := GetLastBuild(domain, repo, ref, job)
+	build, err = GetLastBuild(domain, repo, ref, job)
 	if err != nil {
 		return fmt.Errorf("failed to get last build info: %w", err)
 	}
@@ -215,13 +213,13 @@ func DownloadMautrixBridgeBinary(ctx context.Context, bridge, path string, v2, n
 	} else {
 		log.Printf("Updating [cyan]%s[reset] (diff: %s)", fileName, linkifyDiff(repo, currentCommit, build.Commit))
 	}
-	artifactURL := makeArtifactURL(domain, build.JobURL, fileName)
+	artifactURL = makeArtifactURL(domain, build.JobURL, fileName)
 	err = downloadFile(ctx, artifactURL, path)
 	if err != nil {
 		return err
 	}
 	if needsLibolmDylib(bridge) {
-		libolmPath := filepath.Join(filepath.Dir(path), "libolm.3.dylib")
+		libolmPath = filepath.Join(filepath.Dir(path), "libolm.3.dylib")
 		// TODO redownload libolm if it's outdated?
 		if _, err = os.Stat(libolmPath); err != nil {
 			err = downloadFile(ctx, makeArtifactURL(domain, build.JobURL, "libolm.3.dylib"), libolmPath)

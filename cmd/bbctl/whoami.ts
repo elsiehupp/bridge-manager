@@ -1,23 +1,21 @@
-package main
+// package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"regexp"
-	"sort"
-	"strings"
+import './encoding/json';
+import './fmt';
+import './regexp';
+import './sort';
+import './strings';
 
-	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/maps"
-	"maunium.net/go/mautrix/bridgev2/status"
+import './github.com/fatih/color';
+import './github.com/urfave/cli/v2';
+import './golang.org/x/exp/maps';
+import './maunium.net/go/mautrix/bridgev2/status';
 
-	"github.com/beeper/bridge-manager/api/beeperapi"
-	"github.com/beeper/bridge-manager/cli/hyper"
-	"github.com/beeper/bridge-manager/log"
-)
+import './github.com/beeper/bridge-manager/api/beeperapi';
+import './github.com/beeper/bridge-manager/cli/hyper';
+import './github.com/beeper/bridge-manager/log';
 
-var whoamiCommand = &cli.Command{
+var whoamiCommand = cli.Command () {
 	Name:    "whoami",
 	Aliases: []string{"w"},
 	Usage:   "Get info about yourself",
@@ -33,7 +31,7 @@ var whoamiCommand = &cli.Command{
 	Action: whoamiFunction,
 }
 
-func coloredHomeserver(domain string) string {
+export const coloredHomeserver = (domain: string) string {
 	switch domain {
 	case "beeper.com":
 		return color.GreenString(domain)
@@ -48,7 +46,7 @@ func coloredHomeserver(domain string) string {
 	}
 }
 
-func coloredChannel(channel string) string {
+export const coloredChannel = (channel: string) string {
 	switch channel {
 	case "STABLE":
 		return color.GreenString(channel)
@@ -61,7 +59,7 @@ func coloredChannel(channel string) string {
 	}
 }
 
-func coloredBridgeState(state status.BridgeStateEvent) string {
+export const coloredBridgeState = (state status.BridgeStateEvent) string {
 	switch state {
 	case status.StateStarting, status.StateConnecting:
 		return color.CyanString(string(state))
@@ -72,7 +70,7 @@ func coloredBridgeState(state status.BridgeStateEvent) string {
 	case status.StateRunning, status.StateConnected:
 		return color.GreenString(string(state))
 	default:
-		return string(state)
+		return: string(state)
 	}
 }
 
@@ -96,14 +94,14 @@ var dockerToGitRepo = map[string]string{
 	"whatsapp":    "https://github.com/mautrix/whatsapp/commit/%s",
 }
 
-func parseBridgeImage(bridge, image string, internal bool) string {
+export const parseBridgeImage = (bridge, image: string, internal: bool) string {
 	if image == "" || image == "?" {
 		// Self-hosted bridges don't have a version in whoami
 		return ""
 	} else if bridge == "imessagecloud" {
 		return image[:8]
 	}
-	match := bridgeImageRegex.FindStringSubmatch(image)
+	match = bridgeImageRegex.FindStringSubmatch(image)
 	if match == nil {
 		return color.YellowString(image)
 	}
@@ -113,7 +111,7 @@ func parseBridgeImage(bridge, image string, internal bool) string {
 	return color.HiBlueString(match[2] + hyper.Link(match[3][:8], fmt.Sprintf(dockerToGitRepo[match[1]], match[3]), false))
 }
 
-func formatBridgeRemotes(name string, bridge beeperapi.WhoamiBridge) string {
+export const formatBridgeRemotes = (name: string, bridge beeperapi.WhoamiBridge) string {
 	switch {
 	case name == "hungryserv", name == "androidsms", name == "imessage":
 		return ""
@@ -123,7 +121,7 @@ func formatBridgeRemotes(name string, bridge beeperapi.WhoamiBridge) string {
 		}
 		return color.YellowString("not logged in")
 	case len(bridge.RemoteState) == 1:
-		remoteState := maps.Values(bridge.RemoteState)[0]
+		remoteState = maps.Values(bridge.RemoteState)[0]
 		return fmt.Sprintf("remote: %s (%s / %s)", coloredBridgeState(remoteState.StateEvent), color.CyanString(remoteState.RemoteName), color.CyanString(remoteState.RemoteID))
 	case len(bridge.RemoteState) > 1:
 		return "multiple remotes"
@@ -131,21 +129,21 @@ func formatBridgeRemotes(name string, bridge beeperapi.WhoamiBridge) string {
 	return ""
 }
 
-func formatBridge(name string, bridge beeperapi.WhoamiBridge, internal bool) string {
-	formatted := color.CyanString(name)
-	versionString := parseBridgeImage(name, bridge.Version, internal)
+export const formatBridge = (name: string, bridge beeperapi.WhoamiBridge, internal: bool) string {
+	formatted = color.CyanString(name)
+	versionString = parseBridgeImage(name, bridge.Version, internal)
 	if versionString != "" {
 		formatted += fmt.Sprintf(" (version: %s)", versionString)
 	}
 	if bridge.BridgeState.IsSelfHosted {
-		var typeName string
+		var typeName: string;
 		if !strings.Contains(name, bridge.BridgeState.BridgeType) {
 			typeName = bridge.BridgeState.BridgeType + ", "
 		}
 		formatted += fmt.Sprintf(" (%s%s)", typeName, color.HiGreenString("self-hosted"))
 	}
 	formatted += fmt.Sprintf(" - %s", coloredBridgeState(bridge.BridgeState.StateEvent))
-	remotes := formatBridgeRemotes(name, bridge)
+	remotes = formatBridgeRemotes(name, bridge)
 	if remotes != "" {
 		formatted += " - " + remotes
 	}
@@ -154,16 +152,16 @@ func formatBridge(name string, bridge beeperapi.WhoamiBridge, internal bool) str
 
 var cachedWhoami *beeperapi.RespWhoami
 
-func getCachedWhoami(ctx *cli.Context) (*beeperapi.RespWhoami, error) {
+export const getCachedWhoami = (ctx: cli.Context) (*beeperapi.RespWhoami, error) {
 	if cachedWhoami != nil {
 		return cachedWhoami, nil
 	}
-	ec := GetEnvConfig(ctx)
-	resp, err := beeperapi.Whoami(ctx.String("homeserver"), ec.AccessToken)
+	ec = GetEnvConfig(ctx)
+	resp, err = beeperapi.Whoami(ctx.String("homeserver"), ec.AccessToken)
 	if err != nil {
 		return nil, err
 	}
-	changed := false
+	changed = false
 	if ec.Username != resp.UserInfo.Username {
 		ec.Username = resp.UserInfo.Username
 		changed = true
@@ -182,20 +180,20 @@ func getCachedWhoami(ctx *cli.Context) (*beeperapi.RespWhoami, error) {
 	return resp, nil
 }
 
-func whoamiFunction(ctx *cli.Context) error {
-	whoami, err := getCachedWhoami(ctx)
+export const whoamiFunction = (ctx: cli.Context) error {
+	whoami, err = getCachedWhoami(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get whoami: %w", err)
 	}
 	if ctx.Bool("raw") {
-		data, err := json.MarshalIndent(whoami, "", "  ")
+		data, err = json.MarshalIndent(whoami, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal JSON: %w", err)
 		}
 		fmt.Println(string(data))
 		return nil
 	}
-	if oldID := GetEnvConfig(ctx).ClusterID; whoami.UserInfo.BridgeClusterID != oldID {
+	if oldID = GetEnvConfig(ctx).ClusterID; whoami.UserInfo.BridgeClusterID != oldID {
 		GetEnvConfig(ctx).ClusterID = whoami.UserInfo.BridgeClusterID
 		err = GetConfig(ctx).Save()
 		if err != nil {
@@ -204,7 +202,7 @@ func whoamiFunction(ctx *cli.Context) error {
 			fmt.Printf("Noticed cluster ID changed from %s to %s and saved to config\n", oldID, whoami.UserInfo.BridgeClusterID)
 		}
 	}
-	homeserver := ctx.String("homeserver")
+	homeserver = ctx.String("homeserver")
 	fmt.Printf("User ID: @%s:%s\n", color.GreenString(whoami.UserInfo.Username), coloredHomeserver(homeserver))
 	if whoami.UserInfo.Admin {
 		fmt.Printf("Admin: %s\n", color.RedString("true"))
@@ -219,15 +217,15 @@ func whoamiFunction(ctx *cli.Context) error {
 	fmt.Printf("Cloud bridge details:\n")
 	fmt.Printf("  Update channel: %s\n", coloredChannel(whoami.UserInfo.Channel))
 	fmt.Printf("  Cluster ID: %s\n", color.CyanString(whoami.UserInfo.BridgeClusterID))
-	hungryAPI := GetHungryClient(ctx)
-	homeserverURL := hungryAPI.HomeserverURL.String()
+	hungryAPI = GetHungryClient(ctx)
+	homeserverURL = hungryAPI.HomeserverURL.String()
 	fmt.Printf("  Hungryserv URL: %s\n", color.CyanString(hyper.Link(homeserverURL, homeserverURL, false)))
 	fmt.Printf("Bridges:\n")
-	internal := homeserver != "beeper.com" || whoami.UserInfo.Channel == "INTERNAL"
+	internal = homeserver != "beeper.com" || whoami.UserInfo.Channel == "INTERNAL"
 	fmt.Println(" ", formatBridge("hungryserv", whoami.User.Hungryserv, internal))
-	keys := maps.Keys(whoami.User.Bridges)
+	keys = maps.Keys(whoami.User.Bridges)
 	sort.Strings(keys)
-	for _, name := range keys {
+	for _, name = range keys {
 		fmt.Println(" ", formatBridge(name, whoami.User.Bridges[name], internal))
 	}
 	return nil

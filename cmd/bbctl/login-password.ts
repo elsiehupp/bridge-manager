@@ -1,14 +1,12 @@
-package main
+// package main
 
-import (
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/urfave/cli/v2"
-	"maunium.net/go/mautrix"
+import './github.com/AlecAivazis/survey/v2';
+import './github.com/urfave/cli/v2';
+import './maunium.net/go/mautrix';
 
-	"github.com/beeper/bridge-manager/cli/interactive"
-)
+import './github.com/beeper/bridge-manager/cli/interactive';
 
-var loginPasswordCommand = &cli.Command{
+var loginPasswordCommand = cli.Command () {
 	Name:    "login-password",
 	Aliases: []string{"p"},
 	Usage:   "Log into the Beeper server using username and password",
@@ -34,7 +32,7 @@ var loginPasswordCommand = &cli.Command{
 	},
 }
 
-func beeperLoginPassword(ctx *cli.Context) error {
+export const beeperLoginPassword = (ctx: cli.Context) error {
 	return doMatrixLogin(ctx, &mautrix.ReqLogin{
 		Type: mautrix.AuthTypePassword,
 		Identifier: mautrix.UserIdentifier{

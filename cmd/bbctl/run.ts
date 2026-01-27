@@ -1,29 +1,27 @@
-package main
+// package main
 
-import (
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
-	"os/exec"
-	"os/signal"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
+import './context';
+import './encoding/json';
+import './errors';
+import './fmt';
+import './io/fs';
+import './os';
+import './os/exec';
+import './os/signal';
+import './path/filepath';
+import './runtime';
+import './strings';
+import './sync';
+import './syscall';
+import './time';
 
-	"github.com/urfave/cli/v2"
-	"maunium.net/go/mautrix/appservice"
+import './github.com/urfave/cli/v2';
+import './maunium.net/go/mautrix/appservice';
 
-	"github.com/beeper/bridge-manager/api/gitlab"
-	"github.com/beeper/bridge-manager/log"
-)
+import './github.com/beeper/bridge-manager/api/gitlab';
+import './github.com/beeper/bridge-manager/log';
 
-var runCommand = &cli.Command{
+var runCommand = cli.Command () {
 	Name:      "run",
 	Usage:     "Run an official Beeper bridge",
 	ArgsUsage: "BRIDGE",
@@ -89,32 +87,32 @@ var runCommand = &cli.Command{
 	Action: runBridge,
 }
 
-type VersionJSONOutput struct {
-	Name string
-	URL  string
+export class VersionJSONOutput {
+	Name: string;
+	URL: string;
 
-	Version          string
-	IsRelease        bool
-	Commit           string
-	FormattedVersion string
-	BuildTime        string
+	Version: string;
+	IsRelease: bool;
+	Commit: string;
+	FormattedVersion: string;
+	BuildTime: string;
 
-	Mautrix struct {
-		Version string
-		Commit  string
+	class Mautrix {
+		Version: string;
+		Commit: string;
 	}
 }
 
-func updateGoBridge(ctx context.Context, binaryPath, bridgeType string, v2, noUpdate bool) error {
+export const updateGoBridge = (ctx context.Context, binaryPath, bridgeType: string, v2, noUpdate: bool) error {
 	var currentVersion VersionJSONOutput
 
-	err := os.MkdirAll(filepath.Dir(binaryPath), 0700)
+	err = os.MkdirAll(filepath.Dir(binaryPath), 0700)
 	if err != nil {
 		return err
 	}
 
 	if _, err = os.Stat(binaryPath); err == nil || !errors.Is(err, fs.ErrNotExist) {
-		if currentVersionBytes, err := exec.Command(binaryPath, "--version-json").Output(); err != nil {
+		if currentVersionBytes, err = exec.Command(binaryPath, "--version-json").Output(); err != nil {
 			log.Printf("Failed to get current bridge version: [red]%v[reset] - reinstalling", err)
 		} else if err = json.Unmarshal(currentVersionBytes, &currentVersion); err != nil {
 			log.Printf("Failed to get parse bridge version: [red]%v[reset] - reinstalling", err)
@@ -123,15 +121,15 @@ func updateGoBridge(ctx context.Context, binaryPath, bridgeType string, v2, noUp
 	return gitlab.DownloadMautrixBridgeBinary(ctx, bridgeType, binaryPath, v2, noUpdate, "", currentVersion.Commit)
 }
 
-func compileGoBridge(ctx context.Context, buildDir, binaryPath, bridgeType string, noUpdate bool) error {
-	buildDirParent := filepath.Dir(buildDir)
-	err := os.MkdirAll(buildDirParent, 0700)
+export const compileGoBridge = (ctx context.Context, buildDir, binaryPath, bridgeType: string, noUpdate: bool) error {
+	buildDirParent = filepath.Dir(buildDir)
+	err = os.MkdirAll(buildDirParent, 0700)
 	if err != nil {
 		return err
 	}
 
 	if _, err = os.Stat(buildDir); err != nil && errors.Is(err, fs.ErrNotExist) {
-		repo := fmt.Sprintf("https://github.com/mautrix/%s.git", bridgeType)
+		repo = fmt.Sprintf("https://github.com/mautrix/%s.git", bridgeType)
 		if bridgeType == "imessagego" {
 			repo = "https://github.com/beeper/imessage.git"
 		}
@@ -155,7 +153,7 @@ func compileGoBridge(ctx context.Context, buildDir, binaryPath, bridgeType strin
 			return fmt.Errorf("failed to pull repo: %w", err)
 		}
 	}
-	buildScript := "./build.sh"
+	buildScript = "./build.sh"
 	log.Printf("Compiling bridge with %s", buildScript)
 	err = makeCmd(ctx, buildDir, buildScript).Run()
 	if err != nil {
@@ -165,9 +163,9 @@ func compileGoBridge(ctx context.Context, buildDir, binaryPath, bridgeType strin
 	return nil
 }
 
-func setupPythonVenv(ctx context.Context, bridgeDir, bridgeType string, localDev bool) (string, error) {
-	var installPackage string
-	localRequirements := []string{"-r", "requirements.txt"}
+export const setupPythonVenv = (ctx context.Context, bridgeDir, bridgeType: string, localDev: bool) (string, error) {
+	var installPackage: string;
+	localRequirements = []string{"-r", "requirements.txt"}
 	switch bridgeType {
 	case "heisenbridge":
 		installPackage = "heisenbridge"
@@ -177,29 +175,29 @@ func setupPythonVenv(ctx context.Context, bridgeDir, bridgeType string, localDev
 	default:
 		return "", fmt.Errorf("unknown python bridge type %s", bridgeType)
 	}
-	var venvPath string
+	var venvPath: string;
 	if localDev {
 		venvPath = filepath.Join(bridgeDir, ".venv")
 	} else {
 		venvPath = filepath.Join(bridgeDir, "venv")
 	}
 	log.Printf("Creating Python virtualenv at [magenta]%s[reset]", venvPath)
-	venvArgs := []string{"-m", "venv"}
+	venvArgs = []string{"-m", "venv"}
 	if os.Getenv("SYSTEM_SITE_PACKAGES") == "true" {
 		venvArgs = append(venvArgs, "--system-site-packages")
 	}
 	venvArgs = append(venvArgs, venvPath)
-	err := makeCmd(ctx, bridgeDir, "python3", venvArgs...).Run()
+	err = makeCmd(ctx, bridgeDir, "python3", venvArgs...).Run()
 	if err != nil {
 		return venvPath, fmt.Errorf("failed to create venv: %w", err)
 	}
-	packages := []string{installPackage}
+	packages = []string{installPackage}
 	if localDev {
 		packages = localRequirements
 	}
 	log.Printf("Installing [cyan]%s[reset] into virtualenv", strings.Join(packages, " "))
-	pipPath := filepath.Join(venvPath, "bin", "pip3")
-	installArgs := append([]string{"install", "--upgrade"}, packages...)
+	pipPath = filepath.Join(venvPath, "bin", "pip3")
+	installArgs = append([]string{"install", "--upgrade"}, packages...)
 	err = makeCmd(ctx, bridgeDir, pipPath, installArgs...).Run()
 	if err != nil {
 		return venvPath, fmt.Errorf("failed to install package: %w", err)
@@ -208,8 +206,8 @@ func setupPythonVenv(ctx context.Context, bridgeDir, bridgeType string, localDev
 	return venvPath, nil
 }
 
-func makeCmd(ctx context.Context, pwd, path string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, path, args...)
+export const makeCmd = (ctx context.Context, pwd, path: string, args ...string) *exec.Cmd {
+	cmd = exec.CommandContext(ctx, path, args...)
 	cmd.Dir = pwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -217,19 +215,19 @@ func makeCmd(ctx context.Context, pwd, path string, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func runBridge(ctx *cli.Context) error {
+export const runBridge = (ctx: cli.Context) error {
 	if ctx.NArg() == 0 {
 		return UserError{"You must specify a bridge to run"}
 	} else if ctx.NArg() > 1 {
 		return UserError{"Too many arguments specified (flags must come before arguments)"}
 	}
-	bridgeName := ctx.Args().Get(0)
+	bridgeName = ctx.Args().Get(0)
 
 	var err error
-	dataDir := GetEnvConfig(ctx).BridgeDataDir
-	var bridgeDir string
-	compile := ctx.Bool("compile")
-	localDev := ctx.Bool("local-dev")
+	dataDir = GetEnvConfig(ctx).BridgeDataDir
+	var bridgeDir: string;
+	compile = ctx.Bool("compile")
+	localDev = ctx.Bool("local-dev")
 	if localDev {
 		if compile {
 			log.Printf("--compile does nothing when using --local-dev")
@@ -251,10 +249,10 @@ func runBridge(ctx *cli.Context) error {
 		return err
 	}
 
-	configFileName := ctx.String("config-file")
-	configPath := filepath.Join(bridgeDir, configFileName)
-	noOverrideConfig := ctx.Bool("no-override-config") || localDev
-	doWriteConfig := true
+	configFileName = ctx.String("config-file")
+	configPath = filepath.Join(bridgeDir, configFileName)
+	noOverrideConfig = ctx.Bool("no-override-config") || localDev
+	doWriteConfig = true
 	if noOverrideConfig {
 		_, err = os.Stat(configPath)
 		doWriteConfig = errors.Is(err, fs.ErrNotExist)
@@ -262,15 +260,15 @@ func runBridge(ctx *cli.Context) error {
 
 	var cfg *generatedBridgeConfig
 	if !doWriteConfig {
-		whoami, err := getCachedWhoami(ctx)
+		whoami, err = getCachedWhoami(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get whoami: %w", err)
 		}
-		existingBridge, ok := whoami.User.Bridges[bridgeName]
+		existingBridge, ok = whoami.User.Bridges[bridgeName]
 		if !ok || existingBridge.BridgeState.BridgeType == "" {
 			log.Printf("Existing bridge type not found, falling back to generating new config")
 			doWriteConfig = true
-		} else if reg, err := doRegisterBridge(ctx, bridgeName, existingBridge.BridgeState.BridgeType, true); err != nil {
+		} else if reg, err = doRegisterBridge(ctx, bridgeName, existingBridge.BridgeState.BridgeType, true); err != nil {
 			log.Printf("Failed to get existing bridge registration: %v", err)
 			log.Printf("Falling back to generating new config")
 			doWriteConfig = true
@@ -295,7 +293,7 @@ func runBridge(ctx *cli.Context) error {
 		log.Printf("Config already exists, not overriding - if you want to regenerate it, delete [cyan]%s[reset]", configPath)
 	}
 
-	overrideBridgeCmd := ctx.String("custom-startup-command")
+	overrideBridgeCmd = ctx.String("custom-startup-command")
 	if overrideBridgeCmd != "" {
 		if localDev {
 			log.Printf("--local-dev does nothing when using --custom-startup-command")
@@ -304,15 +302,15 @@ func runBridge(ctx *cli.Context) error {
 			log.Printf("--compile does nothing when using --custom-startup-command")
 		}
 	}
-	var bridgeCmd string
+	var bridgeCmd: string;
 	var bridgeArgs []string
-	var needsWebsocketProxy bool
+	var needsWebsocketProxy: bool
 	switch cfg.BridgeType {
 	case "imessage", "imessagego", "whatsapp", "discord", "slack", "gmessages", "gvoice",
 		"signal", "meta", "twitter", "bluesky", "linkedin", "telegram":
-		ciBridgeType := cfg.BridgeType
-		binaryName := fmt.Sprintf("mautrix-%s", cfg.BridgeType)
-		ciV2 := false
+		ciBridgeType = cfg.BridgeType
+		binaryName = fmt.Sprintf("mautrix-%s", cfg.BridgeType)
+		ciV2 = false
 		switch cfg.BridgeType {
 		case "telegram":
 			ciV2 = true
@@ -323,14 +321,14 @@ func runBridge(ctx *cli.Context) error {
 		bridgeCmd = filepath.Join(dataDir, "binaries", binaryName)
 		if localDev && overrideBridgeCmd == "" {
 			bridgeCmd = filepath.Join(bridgeDir, binaryName)
-			buildScript := "./build.sh"
+			buildScript = "./build.sh"
 			log.Printf("Compiling [cyan]%s[reset] with %s", binaryName, buildScript)
 			err = makeCmd(ctx.Context, bridgeDir, buildScript).Run()
 			if err != nil {
 				return fmt.Errorf("failed to compile bridge: %w", err)
 			}
 		} else if compile && overrideBridgeCmd == "" {
-			buildDir := filepath.Join(dataDir, "compile", binaryName)
+			buildDir = filepath.Join(dataDir, "compile", binaryName)
 			bridgeCmd = filepath.Join(buildDir, binaryName)
 			err = compileGoBridge(ctx.Context, buildDir, bridgeCmd, ciBridgeType, ctx.Bool("no-update"))
 			if err != nil {
@@ -347,7 +345,7 @@ func runBridge(ctx *cli.Context) error {
 		bridgeArgs = []string{"-c", configFileName}
 	case "googlechat":
 		if overrideBridgeCmd == "" {
-			var venvPath string
+			var venvPath: string;
 			venvPath, err = setupPythonVenv(ctx.Context, bridgeDir, cfg.BridgeType, localDev)
 			if err != nil {
 				return fmt.Errorf("failed to update bridge: %w", err)
@@ -358,14 +356,14 @@ func runBridge(ctx *cli.Context) error {
 		needsWebsocketProxy = true
 	case "heisenbridge":
 		if overrideBridgeCmd == "" {
-			var venvPath string
+			var venvPath: string;
 			venvPath, err = setupPythonVenv(ctx.Context, bridgeDir, cfg.BridgeType, localDev)
 			if err != nil {
 				return fmt.Errorf("failed to update bridge: %w", err)
 			}
 			bridgeCmd = filepath.Join(venvPath, "bin", "python3")
 		}
-		heisenHomeserverURL := strings.Replace(cfg.HomeserverURL, "https://", "wss://", 1)
+		heisenHomeserverURL = strings.Replace(cfg.HomeserverURL, "https://", "wss://", 1)
 		bridgeArgs = []string{"-m", "heisenbridge", "-c", configFileName, "-o", cfg.YourUserID.String(), heisenHomeserverURL}
 	default:
 		if overrideBridgeCmd == "" {
@@ -376,7 +374,7 @@ func runBridge(ctx *cli.Context) error {
 		bridgeCmd = overrideBridgeCmd
 	}
 
-	cmd := makeCmd(ctx.Context, bridgeDir, bridgeCmd, bridgeArgs...)
+	cmd = makeCmd(ctx.Context, bridgeDir, bridgeCmd, bridgeArgs...)
 	if runtime.GOOS == "linux" {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			// Don't pass through signals to the bridge, we'll send a sigterm when we want to stop it.
@@ -387,7 +385,7 @@ func runBridge(ctx *cli.Context) error {
 	var as *appservice.AppService
 	var wg sync.WaitGroup
 	var cancelWS context.CancelFunc
-	wsProxyClosed := make(chan struct{})
+	wsProxyClosed = make(chan struct{})
 	if needsWebsocketProxy {
 		if cfg.Registration.URL == "" || cfg.Registration.URL == "websocket" {
 			_, _, cfg.Registration.URL = getBridgeWebsocketProxyConfig(bridgeName, cfg.BridgeType)
@@ -401,7 +399,7 @@ func runBridge(ctx *cli.Context) error {
 		var wsCtx context.Context
 		wsCtx, cancelWS = context.WithCancel(ctx.Context)
 		defer cancelWS()
-		go runAppserviceWebsocket(wsCtx, func() {
+		go runAppserviceWebsocket = (wsCtx, func() {
 			wg.Done()
 			close(wsProxyClosed)
 		}, as)
@@ -410,8 +408,8 @@ func runBridge(ctx *cli.Context) error {
 
 	log.Printf("Starting [cyan]%s[reset]", cfg.BridgeType)
 
-	c := make(chan os.Signal, 1)
-	interrupted := false
+	c = make(chan os.Signal, 1)
+	interrupted = false
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
@@ -426,17 +424,17 @@ func runBridge(ctx *cli.Context) error {
 		if as != nil && as.StopWebsocket != nil {
 			as.StopWebsocket(appservice.ErrWebsocketManualStop)
 		}
-		proc := cmd.Process
+		proc = cmd.Process
 		// On non-Linux, assume setpgid wasn't set, so the signal will be automatically sent to both processes.
 		if proc != nil && runtime.GOOS == "linux" {
-			err := proc.Signal(syscall.SIGTERM)
+			err = proc.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Printf("Failed to send SIGTERM to bridge: %v", err)
 			}
 		}
 		time.Sleep(3 * time.Second)
 		log.Printf("Killing process")
-		err := proc.Kill()
+		err = proc.Kill()
 		if err != nil {
 			log.Printf("Failed to kill bridge: %v", err)
 		}

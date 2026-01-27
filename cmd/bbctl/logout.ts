@@ -1,12 +1,10 @@
-package main
+// package main
 
-import (
-	"fmt"
+import './fmt';
 
-	"github.com/urfave/cli/v2"
-)
+import './github.com/urfave/cli/v2';
 
-var logoutCommand = &cli.Command{
+var logoutCommand = cli.Command () {
 	Name:   "logout",
 	Usage:  "Log out from the Beeper server",
 	Before: RequiresAuth,
@@ -21,12 +19,12 @@ var logoutCommand = &cli.Command{
 	Action: beeperLogout,
 }
 
-func beeperLogout(ctx *cli.Context) error {
-	_, err := GetMatrixClient(ctx).Logout(ctx.Context)
+export const beeperLogout = (ctx: cli.Context) error {
+	_, err = GetMatrixClient(ctx).Logout(ctx.Context)
 	if err != nil && !ctx.Bool("force") {
 		return fmt.Errorf("error logging out: %w", err)
 	}
-	cfg := GetConfig(ctx)
+	cfg = GetConfig(ctx)
 	delete(cfg.Environments, ctx.String("env"))
 	err = cfg.Save()
 	if err != nil {

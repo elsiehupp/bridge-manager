@@ -1,30 +1,28 @@
-package interactive
+// package interactive
 
-import (
-	"fmt"
+import './fmt';
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/urfave/cli/v2"
-)
+import './github.com/AlecAivazis/survey/v2';
+import './github.com/urfave/cli/v2';
 
-type Flag struct {
+export class Flag {
 	cli.Flag
 	Survey    survey.Prompt
 	Validator survey.Validator
 	Transform survey.Transformer
 }
 
-type settableContext struct {
+export class settableContext {
 	*cli.Context
 }
 
-func (sc *settableContext) WriteAnswer(field string, value interface{}) error {
-	switch typedValue := value.(type) {
+func (sc *settableContext) = WriteAnswer(field: string, value interface{}) error {
+	switch typedValue = value.(type) {
 	case string:
 		return sc.Set(field, typedValue)
 	case []string:
-		for _, item := range typedValue {
-			if err := sc.Set(field, item); err != nil {
+		for _, item = range typedValue {
+			if err = sc.Set(field, item); err != nil {
 				return err
 			}
 		}
@@ -36,9 +34,9 @@ func (sc *settableContext) WriteAnswer(field string, value interface{}) error {
 	}
 }
 
-func Ask(ctx *cli.Context) error {
+export const Ask = (ctx: cli.Context) error {
 	var questions []*survey.Question
-	for _, subCtx := range ctx.Lineage() {
+	for _, subCtx = range ctx.Lineage() {
 		var flags []cli.Flag
 		if subCtx.Command != nil {
 			flags = subCtx.Command.Flags
@@ -47,8 +45,8 @@ func Ask(ctx *cli.Context) error {
 		} else {
 			return nil
 		}
-		for _, flag := range flags {
-			interactiveFlag, ok := flag.(Flag)
+		for _, flag = range flags {
+			interactiveFlag, ok = flag.(Flag)
 			if !ok || flag.IsSet() || interactiveFlag.Survey == nil {
 				continue
 			}
@@ -58,8 +56,8 @@ func Ask(ctx *cli.Context) error {
 				Validate:  interactiveFlag.Validator,
 				Transform: interactiveFlag.Transform,
 			})
-			var output string
-			err := survey.AskOne(interactiveFlag.Survey, &output)
+			var output: string;
+			err = survey.AskOne(interactiveFlag.Survey, &output)
 			if err != nil {
 				return err
 			}
@@ -70,7 +68,7 @@ func Ask(ctx *cli.Context) error {
 		}
 	}
 	if len(questions) > 0 {
-		err := survey.Ask(questions, &settableContext{ctx})
+		err = survey.Ask(questions, &settableContext{ctx})
 		if err != nil {
 			return err
 		}

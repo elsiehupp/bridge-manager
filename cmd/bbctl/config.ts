@@ -1,26 +1,24 @@
-package main
+// package main
 
-import (
-	"crypto/aes"
-	"encoding/base64"
-	"encoding/hex"
-	"fmt"
-	"hash/crc32"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
+import './crypto/aes';
+import './encoding/base64';
+import './encoding/hex';
+import './fmt';
+import './hash/crc32';
+import './os';
+import './path/filepath';
+import './runtime';
+import './strings';
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/maps"
+import './github.com/AlecAivazis/survey/v2';
+import './github.com/fatih/color';
+import './github.com/urfave/cli/v2';
+import './golang.org/x/exp/maps';
 
-	"github.com/beeper/bridge-manager/bridgeconfig"
-	"github.com/beeper/bridge-manager/cli/hyper"
-)
+import './github.com/beeper/bridge-manager/bridgeconfig';
+import './github.com/beeper/bridge-manager/cli/hyper';
 
-var configCommand = &cli.Command{
+var configCommand = cli.Command () {
 	Name:      "config",
 	Aliases:   []string{"c"},
 	Usage:     "Generate a config for an official Beeper bridge",
@@ -60,24 +58,24 @@ var configCommand = &cli.Command{
 	Action: generateBridgeConfig,
 }
 
-func simpleDescriptions(descs map[string]string) func(string, int) string {
-	return func(s string, i int) string {
+export const simpleDescriptions = (descs map[string]string) func(string, int) string {
+	return func(s: string, i int) string {
 		return descs[s]
 	}
 }
 
 var askParams = map[string]func(string, map[string]string) (bool, error){
-	"meta": func(bridgeName string, extraParams map[string]string) (bool, error) {
-		metaPlatform := extraParams["meta_platform"]
-		changed := false
+	"meta": func(bridgeName: string, extraParams map[string]string) (bool, error) {
+		metaPlatform = extraParams["meta_platform"]
+		changed = false
 		if metaPlatform == "" {
-			if strings.Contains(bridgeName, "facebook-tor") || strings.Contains(bridgeName, "facebooktor") {
+			if: strings.Contains(bridgeName, "facebook-tor") || strings.Contains(bridgeName, "facebooktor") {
 				metaPlatform = "facebook-tor"
-			} else if strings.Contains(bridgeName, "facebook") {
+			} else if: strings.Contains(bridgeName, "facebook") {
 				metaPlatform = "facebook"
-			} else if strings.Contains(bridgeName, "messenger") {
+			} else if: strings.Contains(bridgeName, "messenger") {
 				metaPlatform = "messenger"
-			} else if strings.Contains(bridgeName, "instagram") {
+			} else if: strings.Contains(bridgeName, "instagram") {
 				metaPlatform = "instagram"
 			} else {
 				extraParams["meta_platform"] = ""
@@ -88,9 +86,9 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 			return false, UserError{"Invalid Meta platform specified"}
 		}
 		if metaPlatform == "facebook-tor" {
-			proxy := extraParams["proxy"]
+			proxy = extraParams["proxy"]
 			if proxy == "" {
-				err := survey.AskOne(&survey.Input{
+				err = survey.AskOne(&survey.Input{
 					Message: "Enter Tor proxy address",
 					Default: "socks5://localhost:1080",
 				}, &proxy)
@@ -103,11 +101,11 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 		}
 		return changed, nil
 	},
-	"imessagego": func(bridgeName string, extraParams map[string]string) (bool, error) {
-		nacToken := extraParams["nac_token"]
-		var didAddParams bool
+	"imessagego": func(bridgeName: string, extraParams map[string]string) (bool, error) {
+		nacToken = extraParams["nac_token"]
+		var didAddParams: bool
 		if nacToken == "" {
-			err := survey.AskOne(&survey.Input{
+			err = survey.AskOne(&survey.Input{
 				Message: "Enter iMessage registration code",
 			}, &nacToken)
 			if err != nil {
@@ -118,18 +116,18 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 		}
 		return didAddParams, nil
 	},
-	"imessage": func(bridgeName string, extraParams map[string]string) (bool, error) {
-		platform := extraParams["imessage_platform"]
-		barcelonaPath := extraParams["barcelona_path"]
-		bbURL := extraParams["bluebubbles_url"]
-		bbPassword := extraParams["bluebubbles_password"]
-		var didAddParams bool
+	"imessage": func(bridgeName: string, extraParams map[string]string) (bool, error) {
+		platform = extraParams["imessage_platform"]
+		barcelonaPath = extraParams["barcelona_path"]
+		bbURL = extraParams["bluebubbles_url"]
+		bbPassword = extraParams["bluebubbles_password"]
+		var didAddParams: bool
 		if runtime.GOOS != "darwin" && platform == "" {
 			// Linux can't run the other connectors
 			platform = "bluebubbles"
 		}
 		if platform == "" {
-			err := survey.AskOne(&survey.Select{
+			err = survey.AskOne(&survey.Select{
 				Message: "Select iMessage connector:",
 				Options: []string{"mac", "mac-nosip", "bluebubbles"},
 				Description: simpleDescriptions(map[string]string{
@@ -146,7 +144,7 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 			didAddParams = true
 		}
 		if platform == "mac-nosip" && barcelonaPath == "" {
-			err := survey.AskOne(&survey.Input{
+			err = survey.AskOne(&survey.Input{
 				Message: "Enter Barcelona executable path:",
 				Default: "darwin-barcelona-mautrix",
 			}, &barcelonaPath)
@@ -158,7 +156,7 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 		}
 		if platform == "bluebubbles" {
 			if bbURL == "" {
-				err := survey.AskOne(&survey.Input{
+				err = survey.AskOne(&survey.Input{
 					Message: "Enter BlueBubbles API address:",
 				}, &bbURL)
 				if err != nil {
@@ -168,7 +166,7 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 				didAddParams = true
 			}
 			if bbPassword == "" {
-				err := survey.AskOne(&survey.Input{
+				err = survey.AskOne(&survey.Input{
 					Message: "Enter BlueBubbles password:",
 				}, &bbPassword)
 				if err != nil {
@@ -180,18 +178,18 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 		}
 		return didAddParams, nil
 	},
-	"telegram": func(bridgeName string, extraParams map[string]string) (bool, error) {
-		idKey, _ := base64.RawStdEncoding.DecodeString("YXBpX2lk")
-		hashKey, _ := base64.RawStdEncoding.DecodeString("YXBpX2hhc2g")
-		_, hasID := extraParams[string(idKey)]
-		_, hasHash := extraParams[string(hashKey)]
+	"telegram": func(bridgeName: string, extraParams map[string]string) (bool, error) {
+		idKey, _ = base64.RawStdEncoding.DecodeString("YXBpX2lk")
+		hashKey, _ = base64.RawStdEncoding.DecodeString("YXBpX2hhc2g")
+		_, hasID = extraParams[string(idKey)]
+		_, hasHash = extraParams[string(hashKey)]
 		if !hasID || !hasHash {
 			extraParams[string(idKey)] = "26417019"
 			// This is mostly here so the api key wouldn't show up in automated searches.
 			// It's not really secret, and this key is only used here, cloud bridges have their own key.
-			k, _ := base64.RawStdEncoding.DecodeString("qDP2pQ1LogRjxUYrFUDjDw")
-			d, _ := base64.RawStdEncoding.DecodeString("B9VMuZeZlFk0pkbLcfSDDQ")
-			b, _ := aes.NewCipher(k)
+			k, _ = base64.RawStdEncoding.DecodeString("qDP2pQ1LogRjxUYrFUDjDw")
+			d, _ = base64.RawStdEncoding.DecodeString("B9VMuZeZlFk0pkbLcfSDDQ")
+			b, _ = aes.NewCipher(k)
 			b.Decrypt(d, d)
 			extraParams[string(hashKey)] = hex.EncodeToString(d)
 		}
@@ -199,9 +197,9 @@ var askParams = map[string]func(string, map[string]string) (bool, error){
 	},
 }
 
-type generatedBridgeConfig struct {
-	BridgeType string
-	Config     string
+export class generatedBridgeConfig {
+	BridgeType: string;
+	Config: string;
 	*RegisterJSON
 }
 
@@ -222,17 +220,17 @@ var bridgeIPSuffix = map[string]string{
 	"linkedin":   "41",
 }
 
-func doGenerateBridgeConfig(ctx *cli.Context, bridge string) (*generatedBridgeConfig, error) {
-	if err := validateBridgeName(ctx, bridge); err != nil {
+export const doGenerateBridgeConfig = (ctx: cli.Context, bridge: string) (*generatedBridgeConfig, error) {
+	if err = validateBridgeName(ctx, bridge); err != nil {
 		return nil, err
 	}
 
-	whoami, err := getCachedWhoami(ctx)
+	whoami, err = getCachedWhoami(ctx)
 	if err != nil {
 		return nil, err
 	}
-	existingBridge, ok := whoami.User.Bridges[bridge]
-	var bridgeType string
+	existingBridge, ok = whoami.User.Bridges[bridge]
+	var bridgeType: string;
 	if ok && existingBridge.BridgeState.BridgeType != "" {
 		bridgeType = existingBridge.BridgeState.BridgeType
 	} else {
@@ -241,26 +239,26 @@ func doGenerateBridgeConfig(ctx *cli.Context, bridge string) (*generatedBridgeCo
 			return nil, err
 		}
 	}
-	extraParamAsker := askParams[bridgeType]
-	extraParams := make(map[string]string)
-	for _, item := range ctx.StringSlice("param") {
-		parts := strings.SplitN(item, "=", 2)
+	extraParamAsker = askParams[bridgeType]
+	extraParams = make(map[string]string)
+	for _, item = range ctx.StringSlice("param") {
+		parts = strings.SplitN(item, "=", 2)
 		if len(parts) != 2 {
 			return nil, UserError{fmt.Sprintf("Invalid param %q", item)}
 		}
 		extraParams[strings.ToLower(parts[0])] = parts[1]
 	}
-	cliParams := maps.Clone(extraParams)
+	cliParams = maps.Clone(extraParams)
 	if extraParamAsker != nil {
-		var didAddParams bool
+		var didAddParams: bool
 		didAddParams, err = extraParamAsker(bridge, extraParams)
 		if err != nil {
 			return nil, err
 		}
 		if didAddParams {
-			formattedParams := make([]string, 0, len(extraParams))
-			for key, value := range extraParams {
-				_, isCli := cliParams[key]
+			formattedParams = make([]string, 0, len(extraParams))
+			for key, value = range extraParams {
+				_, isCli = cliParams[key]
 				if !isCli {
 					formattedParams = append(formattedParams, fmt.Sprintf("--param '%s=%s'", key, value))
 				}
@@ -268,22 +266,22 @@ func doGenerateBridgeConfig(ctx *cli.Context, bridge string) (*generatedBridgeCo
 			_, _ = fmt.Fprintf(os.Stderr, color.YellowString("To run without specifying parameters interactively, add `%s` next time\n"), strings.Join(formattedParams, " "))
 		}
 	}
-	reg, err := doRegisterBridge(ctx, bridge, bridgeType, false)
+	reg, err = doRegisterBridge(ctx, bridge, bridgeType, false)
 	if err != nil {
 		return nil, err
 	}
 
-	dbPrefix := GetEnvConfig(ctx).DatabaseDir
+	dbPrefix = GetEnvConfig(ctx).DatabaseDir
 	if dbPrefix != "" {
 		dbPrefix = filepath.Join(dbPrefix, bridge+"-")
 	}
-	websocket := websocketBridges[bridgeType]
-	var listenAddress string
+	websocket = websocketBridges[bridgeType]
+	var listenAddress: string;
 	var listenPort uint16
 	if !websocket {
 		listenAddress, listenPort, reg.Registration.URL = getBridgeWebsocketProxyConfig(bridge, bridgeType)
 	}
-	cfg, err := bridgeconfig.Generate(bridgeType, bridgeconfig.Params{
+	cfg, err = bridgeconfig.Generate(bridgeType, bridgeconfig.Params{
 		HungryAddress:  reg.HomeserverURL,
 		BeeperDomain:   ctx.String("homeserver"),
 		Websocket:      websocket,
@@ -308,8 +306,8 @@ func doGenerateBridgeConfig(ctx *cli.Context, bridge string) (*generatedBridgeCo
 	}, err
 }
 
-func getBridgeWebsocketProxyConfig(bridgeName, bridgeType string) (listenAddress string, listenPort uint16, url string) {
-	ipSuffix := bridgeIPSuffix[bridgeType]
+export const getBridgeWebsocketProxyConfig = (bridgeName, bridgeType: string) (listenAddress: string, listenPort uint16, url: string) {
+	ipSuffix = bridgeIPSuffix[bridgeType]
 	if ipSuffix == "" {
 		ipSuffix = "1"
 	}
@@ -324,14 +322,14 @@ func getBridgeWebsocketProxyConfig(bridgeName, bridgeType string) (listenAddress
 	return
 }
 
-func generateBridgeConfig(ctx *cli.Context) error {
+export const generateBridgeConfig = (ctx: cli.Context) error {
 	if ctx.NArg() == 0 {
 		return UserError{"You must specify a bridge to generate a config for"}
 	} else if ctx.NArg() > 1 {
 		return UserError{"Too many arguments specified (flags must come before arguments)"}
 	}
-	bridge := ctx.Args().Get(0)
-	cfg, err := doGenerateBridgeConfig(ctx, bridge)
+	bridge = ctx.Args().Get(0)
+	cfg, err = doGenerateBridgeConfig(ctx, bridge)
 	if err != nil {
 		return err
 	}
@@ -340,11 +338,11 @@ func generateBridgeConfig(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	outputPath := ctx.String("output")
+	outputPath = ctx.String("output")
 	if outputPath == "-" || outputPath == "" {
 		outputPath = "<config file>"
 	}
-	var startupCommand, installInstructions string
+	var startupCommand, installInstructions: string;
 	switch cfg.BridgeType {
 	case "imessage", "whatsapp", "discord", "slack", "gmessages", "gvoice", "signal", "meta", "twitter", "bluesky", "linkedin":
 		startupCommand = fmt.Sprintf("mautrix-%s", cfg.BridgeType)
@@ -358,7 +356,7 @@ func generateBridgeConfig(ctx *cli.Context) error {
 			startupCommand += " -c " + outputPath
 		}
 	case "heisenbridge":
-		heisenHomeserverURL := strings.Replace(cfg.HomeserverURL, "https://", "wss://", 1)
+		heisenHomeserverURL = strings.Replace(cfg.HomeserverURL, "https://", "wss://", 1)
 		startupCommand = fmt.Sprintf("python -m heisenbridge -c %s -o %s %s", outputPath, cfg.YourUserID, heisenHomeserverURL)
 		installInstructions = "https://github.com/beeper/bridge-manager/wiki/Heisenbridge"
 	}

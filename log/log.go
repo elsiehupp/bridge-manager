@@ -1,12 +1,11 @@
 package log
 
-import (
-	"fmt"
-	"os"
+import "fmt";
+import "os"
 
-	"github.com/fatih/color"
-	"github.com/mitchellh/colorstring"
-)
+	"github.com/fatih/color";
+import "github.com/mitchellh/colorstring"
+);
 
 func Printf(format string, args ...any) {
 	if !color.NoColor {

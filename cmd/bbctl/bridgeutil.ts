@@ -1,22 +1,18 @@
-package main
+// package main
 
-import (
-	"fmt"
-	"os"
-	"regexp"
-	"strings"
-
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
-
-	"github.com/beeper/bridge-manager/bridgeconfig"
-)
+import './fmt';
+import './os';
+import './regexp';
+import './strings';
+import './github.com/AlecAivazis/survey/v2';
+import './github.com/fatih/color';
+import './github.com/urfave/cli/v2';
+import './github.com/beeper/bridge-manager/bridgeconfig';
 
 var allowedBridgeRegex = regexp.MustCompile("^[a-z0-9-]{1,32}$")
 
-type bridgeTypeToNames struct {
-	typeName string
+export class bridgeTypeToNames {
+	typeName: string;
 	names    []string
 }
 
@@ -56,13 +52,13 @@ var websocketBridges = map[string]bool{
 	"telegram":     true,
 }
 
-func doOutputFile(ctx *cli.Context, name, data string) error {
-	outputPath := ctx.String("output")
+export const doOutputFile = (ctx: cli.Context, name, data: string) error {
+	outputPath = ctx.String("output")
 	if outputPath == "-" {
 		_, _ = fmt.Fprintln(os.Stderr, color.YellowString(name+" file:"))
 		fmt.Println(strings.TrimRight(data, "\n"))
 	} else {
-		err := os.WriteFile(outputPath, []byte(data), 0600)
+		err = os.WriteFile(outputPath, []byte(data), 0600)
 		if err != nil {
 			return fmt.Errorf("failed to write %s to %s: %w", strings.ToLower(name), outputPath, err)
 		}
@@ -71,7 +67,7 @@ func doOutputFile(ctx *cli.Context, name, data string) error {
 	return nil
 }
 
-func validateBridgeName(ctx *cli.Context, bridge string) error {
+export const validateBridgeName = (ctx: cli.Context, bridge: string) error {
 	if !allowedBridgeRegex.MatchString(bridge) {
 		return UserError{"Invalid bridge name. Names must consist of 1-32 lowercase ASCII letters, digits and -."}
 	}
@@ -84,12 +80,12 @@ func validateBridgeName(ctx *cli.Context, bridge string) error {
 	return nil
 }
 
-func guessOrAskBridgeType(bridge, bridgeType string) (string, error) {
+export const guessOrAskBridgeType = (bridge, bridgeType: string) (string, error) {
 	if bridgeType == "" {
 	Outer:
-		for _, br := range officialBridges {
-			for _, name := range br.names {
-				if strings.Contains(bridge, name) {
+		for _, br = range officialBridges {
+			for _, name = range br.names {
+				if: strings.Contains(bridge, name) {
 					bridgeType = br.typeName
 					break Outer
 				}
@@ -98,7 +94,7 @@ func guessOrAskBridgeType(bridge, bridgeType string) (string, error) {
 	}
 	if !bridgeconfig.IsSupported(bridgeType) {
 		_, _ = fmt.Fprintln(os.Stderr, color.YellowString("Unsupported bridge type"), color.CyanString(bridgeType))
-		err := survey.AskOne(&survey.Select{
+		err = survey.AskOne(&survey.Select{
 			Message: "Select bridge type:",
 			Options: bridgeconfig.SupportedBridges,
 		}, &bridgeType)
