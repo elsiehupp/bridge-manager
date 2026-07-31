@@ -134,6 +134,8 @@ func compileGoBridge(ctx context.Context, buildDir, binaryPath, bridgeType strin
 		repo := fmt.Sprintf("https://github.com/mautrix/%s.git", bridgeType)
 		if bridgeType == "imessagego" {
 			repo = "https://github.com/beeper/imessage.git"
+		} else if bridgeType == "instagram" {
+			repo = "https://github.com/mautrix/meta.git"
 		}
 		log.Printf("Cloning [cyan]%s[reset] to [cyan]%s[reset]", repo, buildDir)
 		err = makeCmd(ctx, buildDirParent, "git", "clone", repo, buildDir).Run()
@@ -156,6 +158,9 @@ func compileGoBridge(ctx context.Context, buildDir, binaryPath, bridgeType strin
 		}
 	}
 	buildScript := "./build.sh"
+	if bridgeType == "instagram" {
+		buildScript = "./build-ig.sh"
+	}
 	log.Printf("Compiling bridge with %s", buildScript)
 	err = makeCmd(ctx, buildDir, buildScript).Run()
 	if err != nil {
@@ -331,7 +336,7 @@ func runBridge(ctx *cli.Context) error {
 		} else if compile && overrideBridgeCmd == "" {
 			buildDir := filepath.Join(dataDir, "compile", binaryName)
 			bridgeCmd = filepath.Join(buildDir, binaryName)
-			err = compileGoBridge(ctx.Context, buildDir, bridgeCmd, ciBridgeType, ctx.Bool("no-update"))
+			err = compileGoBridge(ctx.Context, buildDir, bridgeCmd, cfg.BridgeType, ctx.Bool("no-update"))
 			if err != nil {
 				return fmt.Errorf("failed to compile bridge: %w", err)
 			}
