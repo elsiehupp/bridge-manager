@@ -75,6 +75,7 @@ var registerBridgeTypeMap = map[string]string{
 	"discord":   "discordgo",
 	"instagram": "instagramgo",
 	"facebook":  "facebookgo",
+	"meta":      "facebookgo",
 }
 
 var reverseRegisterBridgeTypeMap = make(map[string]string, len(registerBridgeTypeMap))
