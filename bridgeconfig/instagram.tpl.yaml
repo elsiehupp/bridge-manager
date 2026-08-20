@@ -19,7 +19,7 @@ network:
     # Disable fetching XMA media (reels, stories, etc) when backfilling.
     disable_xma_backfill: true
     # Disable fetching XMA media entirely.
-    disable_xma_always: false
+    disable_xma_always: true
     # Should typing notification bridging be disabled?
     # Bridging typing notifications requires 2 extra connections per user (one for receiving and one for sending),
     # because Meta only employs professional software engineers who make excellent architecture decisions.
