@@ -328,6 +328,9 @@ func runBridge(ctx *cli.Context) error {
 		if localDev && overrideBridgeCmd == "" {
 			bridgeCmd = filepath.Join(bridgeDir, binaryName)
 			buildScript := "./build.sh"
+			if cfg.BridgeType == "instagram" {
+				buildScript = "./build-ig.sh"
+			}
 			log.Printf("Compiling [cyan]%s[reset] with %s", binaryName, buildScript)
 			err = makeCmd(ctx.Context, bridgeDir, buildScript).Run()
 			if err != nil {
